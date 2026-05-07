@@ -67,8 +67,8 @@ function startStaffDashboardPolling(serviceId, intervalMs = STAFF_DASHBOARD_POLL
         if (lastSignature === null) {
           lastSignature = data.signature;
         } else if (lastSignature !== data.signature) {
-          const focusedFormControl = document.querySelector(':is(input, select, textarea, button):focus');
-          if (!focusedFormControl) {
+          const focusedElement = document.querySelector(':is(input, select, textarea, button):focus');
+          if (!focusedElement) {
             window.location.reload();
           }
         }
