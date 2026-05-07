@@ -33,7 +33,7 @@ body {
   margin: 0;
   background: radial-gradient(circle at top left, #f9fbff, var(--surface));
   color: var(--ink);
-  font-family: "Inter", "DM Sans", "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
   line-height: 1.6;
   letter-spacing: 0.01em;
 }

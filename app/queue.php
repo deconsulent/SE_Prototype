@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 
-const SQLSTATE_INTEGRITY_CONSTRAINT_VIOLATION = '23000';
+// SQLSTATE class for integrity constraint violations (includes duplicate-entry errors).
+const SQLSTATE_INTEGRITY_CONSTRAINT_CLASS = '23000';
 
 function queue_today(): string {
   return (new DateTimeImmutable('now'))->format('Y-m-d');
@@ -51,7 +52,7 @@ function queue_join(int $user_id, int $service_id): array {
     return ['ok' => true, 'ticket_id' => $ticket_id, 'already' => false];
   } catch (Throwable $e) {
     $pdo->rollBack();
-    if ($e instanceof PDOException && (string)$e->getCode() === SQLSTATE_INTEGRITY_CONSTRAINT_VIOLATION) {
+    if ($e instanceof PDOException && (string)$e->getCode() === SQLSTATE_INTEGRITY_CONSTRAINT_CLASS) {
       return queue_reopen_latest_ticket($user_id, $service_id);
     }
     return ['ok' => false, 'error' => 'Failed to join queue.'];
