@@ -44,3 +44,42 @@ function startPolling(ticketId, intervalMs=8000) {
   pollTicketStatus(ticketId);
   setInterval(() => pollTicketStatus(ticketId), intervalMs);
 }
+
+async function pollStaffDashboard(serviceId) {
+  const url = `api/staff_queue_snapshot.php?service_id=${encodeURIComponent(serviceId)}`;
+  const res = await fetch(url, { credentials: 'same-origin' });
+  return res.json();
+}
+
+const STAFF_DASHBOARD_POLLING_MS = 5000;
+
+function startStaffDashboardPolling(serviceId, intervalMs = STAFF_DASHBOARD_POLLING_MS) {
+  if (!serviceId) return;
+  let lastSignature = null;
+  let inFlight = false;
+
+  const check = async () => {
+    if (inFlight) return;
+    inFlight = true;
+    try {
+      const data = await pollStaffDashboard(serviceId);
+      if (data && data.ok) {
+        if (lastSignature === null) {
+          lastSignature = data.signature;
+        } else if (lastSignature !== data.signature) {
+          const focusedElement = document.querySelector(':is(input, select, textarea, button):focus');
+          if (!focusedElement) {
+            window.location.reload();
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      inFlight = false;
+    }
+  };
+
+  check();
+  setInterval(check, intervalMs);
+}

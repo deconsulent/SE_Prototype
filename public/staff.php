@@ -15,6 +15,7 @@ $summary = $service_id ? analytics_service_summary($service_id) : null;
 
 <div class="card">
   <h1>Staff Dashboard</h1>
+  <p class="caption">Auto-refresh is enabled. New joins and updates appear automatically.</p>
   <form method="get">
     <label>Choose service</label>
     <select name="service_id" onchange="this.form.submit()">
@@ -33,7 +34,7 @@ $summary = $service_id ? analytics_service_summary($service_id) : null;
       <h2><?= e($service['name']) ?></h2>
       <div><small><?= e($service['location']) ?> • Hours: <?= e($service['open_time']) ?>–<?= e($service['close_time']) ?></small></div>
       <?php if ($summary): ?>
-        <div style="margin-top:10px;">
+        <div class="metric-row">
           <span class="badge">Waiting: <?= (int)$summary['waiting'] ?></span>
           <span class="badge">Called: <?= (int)$summary['called'] ?></span>
           <span class="badge">Served: <?= (int)$summary['served'] ?></span>
@@ -54,7 +55,7 @@ $summary = $service_id ? analytics_service_summary($service_id) : null;
   <div class="card">
     <h2>Current queue (today)</h2>
     <?php if (count($list) === 0): ?>
-      <p><small>No active tickets.</small></p>
+      <p class="empty-state">You're all caught up. No active tickets right now.</p>
     <?php else: ?>
       <table>
         <thead>
@@ -102,6 +103,13 @@ $summary = $service_id ? analytics_service_summary($service_id) : null;
       </table>
     <?php endif; ?>
   </div>
+<?php endif; ?>
+
+<script src="assets/app.js"></script>
+<?php if ($service_id > 0): ?>
+  <script>
+    startStaffDashboardPolling(<?= (int)$service_id ?>);
+  </script>
 <?php endif; ?>
 
 <?php require_once __DIR__ . '/_layout_bottom.php'; ?>
