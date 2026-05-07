@@ -28,7 +28,7 @@ function queue_join(int $user_id, int $service_id): array {
   $pdo->beginTransaction();
   try {
     // Determine next ticket number for this service today
-    $stmt = $pdo->prepare('SELECT COALESCE(MAX(ticket_no), 0) AS m FROM queue_tickets WHERE service_id = ? AND queue_date = CURDATE()');
+    $stmt = $pdo->prepare('SELECT COALESCE(MAX(ticket_no), 0) AS m FROM queue_tickets WHERE service_id = ? AND queue_date = CURDATE() FOR UPDATE');
     $stmt->execute([$service_id]);
     $max = (int)($stmt->fetch()['m'] ?? 0);
     $ticket_no = $max + 1;
@@ -75,12 +75,12 @@ function queue_reopen_latest_ticket(int $user_id, int $service_id): array {
       return ['ok' => false, 'error' => 'Failed to join queue.'];
     }
 
-    if (in_array((string)$ticket['status'], ['WAITING', 'CALLED'], true)) {
+    if (in_array($ticket['status'], ['WAITING', 'CALLED'], true)) {
       $pdo->commit();
       return ['ok' => true, 'ticket_id' => (int)$ticket['id'], 'already' => true];
     }
 
-    $stmt = $pdo->prepare('SELECT COALESCE(MAX(ticket_no), 0) AS m FROM queue_tickets WHERE service_id = ? AND queue_date = CURDATE()');
+    $stmt = $pdo->prepare('SELECT COALESCE(MAX(ticket_no), 0) AS m FROM queue_tickets WHERE service_id = ? AND queue_date = CURDATE() FOR UPDATE');
     $stmt->execute([$service_id]);
     $max = (int)($stmt->fetch()['m'] ?? 0);
     $ticket_no = $max + 1;
