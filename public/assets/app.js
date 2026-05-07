@@ -51,7 +51,9 @@ async function pollStaffDashboard(serviceId) {
   return res.json();
 }
 
-function startStaffDashboardPolling(serviceId, intervalMs=5000) {
+const STAFF_DASHBOARD_POLLING_MS = 5000;
+
+function startStaffDashboardPolling(serviceId, intervalMs = STAFF_DASHBOARD_POLLING_MS) {
   if (!serviceId) return;
   let lastSignature = null;
   let inFlight = false;
@@ -65,7 +67,10 @@ function startStaffDashboardPolling(serviceId, intervalMs=5000) {
         if (lastSignature === null) {
           lastSignature = data.signature;
         } else if (lastSignature !== data.signature) {
-          window.location.reload();
+          const hasFocusedFormControl = document.querySelector('form input:focus, form select:focus, form textarea:focus, form button:focus');
+          if (!hasFocusedFormControl) {
+            window.location.reload();
+          }
         }
       }
     } catch (e) {

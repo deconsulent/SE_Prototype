@@ -108,7 +108,7 @@ $summary = $service_id ? analytics_service_summary($service_id) : null;
 <script src="assets/app.js"></script>
 <?php if ($service_id > 0): ?>
   <script>
-    startStaffDashboardPolling(<?= (int)$service_id ?>, 5000);
+    startStaffDashboardPolling(<?= (int)$service_id ?>);
   </script>
 <?php endif; ?>
 
