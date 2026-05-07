@@ -49,6 +49,57 @@ function queue_join(int $user_id, int $service_id): array {
     return ['ok' => true, 'ticket_id' => $ticket_id, 'already' => false];
   } catch (Throwable $e) {
     $pdo->rollBack();
+    if ($e instanceof PDOException && (string)$e->getCode() === '23000') {
+      return queue_reopen_latest_ticket($user_id, $service_id);
+    }
+    return ['ok' => false, 'error' => 'Failed to join queue.'];
+  }
+}
+
+function queue_reopen_latest_ticket(int $user_id, int $service_id): array {
+  $pdo = db();
+  $pdo->beginTransaction();
+  try {
+    $stmt = $pdo->prepare('
+      SELECT id, status
+      FROM queue_tickets
+      WHERE user_id = ? AND service_id = ? AND queue_date = CURDATE()
+      ORDER BY id DESC
+      LIMIT 1
+      FOR UPDATE
+    ');
+    $stmt->execute([$user_id, $service_id]);
+    $ticket = $stmt->fetch();
+    if (!$ticket) {
+      $pdo->commit();
+      return ['ok' => false, 'error' => 'Failed to join queue.'];
+    }
+
+    if (in_array((string)$ticket['status'], ['WAITING', 'CALLED'], true)) {
+      $pdo->commit();
+      return ['ok' => true, 'ticket_id' => (int)$ticket['id'], 'already' => true];
+    }
+
+    $stmt = $pdo->prepare('SELECT COALESCE(MAX(ticket_no), 0) AS m FROM queue_tickets WHERE service_id = ? AND queue_date = CURDATE()');
+    $stmt->execute([$service_id]);
+    $max = (int)($stmt->fetch()['m'] ?? 0);
+    $ticket_no = $max + 1;
+
+    $avg = queue_avg_service_minutes($service_id);
+    $position = queue_position_estimate($service_id, $ticket_no);
+    $eta = max(0, $position * $avg);
+
+    $stmt = $pdo->prepare('
+      UPDATE queue_tickets
+      SET ticket_no = ?, status = "WAITING", priority = 0, joined_at = NOW(), called_at = NULL, served_at = NULL, eta_minutes_at_join = ?
+      WHERE id = ?
+    ');
+    $stmt->execute([$ticket_no, $eta, (int)$ticket['id']]);
+
+    $pdo->commit();
+    return ['ok' => true, 'ticket_id' => (int)$ticket['id'], 'already' => false];
+  } catch (Throwable $e) {
+    $pdo->rollBack();
     return ['ok' => false, 'error' => 'Failed to join queue.'];
   }
 }
@@ -193,4 +244,30 @@ function queue_list_waiting(int $service_id): array {
   ');
   $stmt->execute([$service_id]);
   return $stmt->fetchAll();
+}
+
+function queue_service_snapshot_signature(int $service_id): string {
+  $stmt = db()->prepare('
+    SELECT
+      SUM(status = "WAITING") AS waiting,
+      SUM(status = "CALLED") AS called,
+      SUM(status = "SERVED") AS served,
+      SUM(status = "NOSHOW") AS noshow,
+      SUM(status = "CANCELLED") AS cancelled,
+      COUNT(*) AS total,
+      COALESCE(MAX(id), 0) AS max_id
+    FROM queue_tickets
+    WHERE service_id = ? AND queue_date = CURDATE()
+  ');
+  $stmt->execute([$service_id]);
+  $row = $stmt->fetch() ?: [];
+  return implode(':', [
+    (int)($row['waiting'] ?? 0),
+    (int)($row['called'] ?? 0),
+    (int)($row['served'] ?? 0),
+    (int)($row['noshow'] ?? 0),
+    (int)($row['cancelled'] ?? 0),
+    (int)($row['total'] ?? 0),
+    (int)($row['max_id'] ?? 0),
+  ]);
 }

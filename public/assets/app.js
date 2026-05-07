@@ -44,3 +44,37 @@ function startPolling(ticketId, intervalMs=8000) {
   pollTicketStatus(ticketId);
   setInterval(() => pollTicketStatus(ticketId), intervalMs);
 }
+
+async function pollStaffDashboard(serviceId) {
+  const url = `api/staff_queue_snapshot.php?service_id=${encodeURIComponent(serviceId)}`;
+  const res = await fetch(url, { credentials: 'same-origin' });
+  return res.json();
+}
+
+function startStaffDashboardPolling(serviceId, intervalMs=5000) {
+  if (!serviceId) return;
+  let lastSignature = null;
+  let inFlight = false;
+
+  const check = async () => {
+    if (inFlight) return;
+    inFlight = true;
+    try {
+      const data = await pollStaffDashboard(serviceId);
+      if (data && data.ok) {
+        if (lastSignature === null) {
+          lastSignature = data.signature;
+        } else if (lastSignature !== data.signature) {
+          window.location.reload();
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      inFlight = false;
+    }
+  };
+
+  check();
+  setInterval(check, intervalMs);
+}
