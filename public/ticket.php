@@ -13,6 +13,14 @@ if (!$status) {
   flash_set('error', 'Ticket not found.');
   redirect('user.php');
 }
+
+// If ticket is in terminal status and user tries to view it, show it but with option to return
+$terminalStatuses = ['SERVED', 'NOSHOW', 'CANCELLED'];
+if (in_array($status['status'], $terminalStatuses, true)) {
+  $showBackButton = true;
+} else {
+  $showBackButton = false;
+}
 ?>
 
 <div class="card">
