@@ -13,7 +13,8 @@ async function pollTicketStatus(ticketId) {
 
     const t = data.ticket;
     const isTerminal = ['SERVED', 'NOSHOW', 'CANCELLED'].includes(t.status);
-    el.innerHTML = `
+    
+    let html = `
       <div class="card">
         <div class="row">
           <div class="col">
@@ -30,12 +31,17 @@ async function pollTicketStatus(ticketId) {
           </div>
         </div>
       </div>
-      ${isTerminal ? `
-        <div class="card">
-          <a class="btn" href="user.php">Back to Dashboard</a>
-        </div>
-      ` : ''}
     `;
+    
+    if (isTerminal) {
+      html += `
+      <div class="card">
+        <a class="btn" href="user.php">Back to Dashboard</a>
+      </div>
+      `;
+    }
+    
+    el.innerHTML = html;
 
     if (t.status === 'CALLED') {
       // Simple in-browser "notification"
