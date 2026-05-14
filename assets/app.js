@@ -12,33 +12,30 @@ async function pollTicketStatus(ticketId) {
     }
 
     const t = data.ticket;
+    console.log('Ticket status:', t.status);
     const isTerminal = ['SERVED', 'NOSHOW', 'CANCELLED'].includes(t.status);
+    console.log('Is terminal:', isTerminal);
     
-    let html = `
-      <div class="card">
-        <div class="row">
-          <div class="col">
-            <h2>${t.service_name}</h2>
-            <div><span class="badge">Ticket #${t.ticket_no}</span> <span class="badge">Status: ${t.status}</span></div>
-            <small>Location: ${t.location}</small>
-          </div>
-          <div class="col">
-            ${t.status === 'WAITING'
-              ? `<div><b>People ahead:</b> ${t.ahead}</div><div><b>ETA:</b> ~${t.eta_minutes} min</div>`
-              : `<div><b>ETA:</b> 0 min</div>`
-            }
-            <small>Joined: ${t.joined_at}</small>
-          </div>
+    let html = `<div class="card">
+      <div class="row">
+        <div class="col">
+          <h2>${t.service_name}</h2>
+          <div><span class="badge">Ticket #${t.ticket_no}</span> <span class="badge">Status: ${t.status}</span></div>
+          <small>Location: ${t.location}</small>
+        </div>
+        <div class="col">
+          ${t.status === 'WAITING'
+            ? `<div><b>People ahead:</b> ${t.ahead}</div><div><b>ETA:</b> ~${t.eta_minutes} min</div>`
+            : `<div><b>ETA:</b> 0 min</div>`
+          }
+          <small>Joined: ${t.joined_at}</small>
         </div>
       </div>
-    `;
+    </div>`;
     
     if (isTerminal) {
-      html += `
-      <div class="card">
-        <a class="btn" href="user.php">Back to Dashboard</a>
-      </div>
-      `;
+      console.log('Adding back to dashboard button');
+      html += `<div class="card"><a class="btn" href="user.php">Back to Dashboard</a></div>`;
     }
     
     el.innerHTML = html;
